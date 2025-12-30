@@ -2,6 +2,7 @@ import os
 import time
 import requests
 from dotenv import load_dotenv
+from threading import Lock
 
 load_dotenv()
 
@@ -14,6 +15,46 @@ HEADERS = {
         "x-api-key": SIXTYFOUR_API_KEY,
         "Content-Type": "application/json",
     }
+
+# ========== RESULT CACHE ==========
+# Caches API results to avoid duplicate calls for overlapping data
+# Key: tuple of identifying fields, Value: API result dict
+_enrich_cache: dict[tuple, dict] = {}
+_email_cache: dict[tuple, dict] = {}
+_cache_lock = Lock()  # Thread-safe cache access
+
+def _make_enrich_cache_key(row_dict: dict) -> tuple:
+    """Create a unique cache key from lead identifying info."""
+    return (
+        str(row_dict.get("name", "")).strip().lower(),
+        str(row_dict.get("company", "")).strip().lower(),
+        str(row_dict.get("linkedin", "")).strip().lower(),
+    )
+
+def _make_email_cache_key(row_dict: dict, mode: str) -> tuple:
+    """Create a unique cache key for email lookup."""
+    return (
+        str(row_dict.get("name", "")).strip().lower(),
+        str(row_dict.get("company", "")).strip().lower(),
+        str(row_dict.get("linkedin", "")).strip().lower(),
+        mode,
+    )
+
+def get_cache_stats() -> dict:
+    """Return cache statistics for debugging."""
+    with _cache_lock:
+        return {
+            "enrich_cache_size": len(_enrich_cache),
+            "email_cache_size": len(_email_cache),
+        }
+
+def clear_cache():
+    """Clear all caches (useful for testing)."""
+    global _enrich_cache, _email_cache
+    with _cache_lock:
+        _enrich_cache = {}
+        _email_cache = {}
+        print("🗑️ Cache cleared")
 
 def poll_enrich_result(task_id: str, sleep_for = 1.0):
     start = time.time()
@@ -46,7 +87,15 @@ def enrich_one_row(row_dict: dict):
     Calls enrich-lead-async + polls until done.
     Takes in a row_dict that should be funneled in from thread-handled dataframe
     Returns dict of extracted fields to merge into dataframe.
+    Uses cache to avoid duplicate API calls for same lead.
     """
+    # Check cache first
+    cache_key = _make_enrich_cache_key(row_dict)
+    with _cache_lock:
+        if cache_key in _enrich_cache:
+            print(f"💾 CACHE HIT for enrich: {cache_key[:2]}")
+            return _enrich_cache[cache_key].copy()
+    
     struct = {
         "name": "The individual's full name",
         "email": "The individual's email address",
@@ -59,7 +108,6 @@ def enrich_one_row(row_dict: dict):
         "industry": "Industry the person operates in",
         "education": "Educational background including undergrad university",
     }
-
 
     lead_info = {
         "name": row_dict.get("name"),
@@ -94,6 +142,11 @@ def enrich_one_row(row_dict: dict):
     if not isinstance(result, dict):
         return {}
 
+    # Store in cache for future use
+    with _cache_lock:
+        _enrich_cache[cache_key] = result.copy()
+        print(f"💾 CACHED enrich result for: {cache_key[:2]} (cache size: {len(_enrich_cache)})")
+
     print("\n\nENRICH RESULT:", result)
     print("******TOTAL TIME FOR ROW", time.time() - start, "seconds\n\n")
     return result
@@ -104,7 +157,17 @@ def find_email_one_row(row_dict: dict, mode: str):
     Calls find-email. 
     Takes in thread-handled row, (shouldn't take much testing)
     Returns dict of fields to merge into df.
+    Uses cache to avoid duplicate API calls for same lead.
     """
+    # Check cache first
+    cache_key = _make_email_cache_key(row_dict, mode)
+    with _cache_lock:
+        if cache_key in _email_cache:
+            cached = _email_cache[cache_key]
+            print(f"💾 CACHE HIT for email: {cache_key[:2]}")
+            # Merge cached email into row_dict
+            row_dict["email"] = cached.get("email", "")
+            return row_dict
 
     lead = {
         "name": row_dict.get("name"),
@@ -139,7 +202,14 @@ def find_email_one_row(row_dict: dict, mode: str):
     elif mode == 'PROFESSIONAL':
         email = data.get("email")
     
-    print("Email:", email[0][0])
-    row_dict["email"] = email[0][0]
+    email_value = email[0][0] if email else ""
+    print("Email:", email_value)
+    row_dict["email"] = email_value
+    
+    # Store in cache for future use
+    with _cache_lock:
+        _email_cache[cache_key] = {"email": email_value}
+        print(f"💾 CACHED email result for: {cache_key[:2]} (cache size: {len(_email_cache)})")
+    
     print("\n\nROW DICT:", row_dict)
     return row_dict

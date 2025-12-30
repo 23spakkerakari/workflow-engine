@@ -11,6 +11,7 @@ from models import (
 )
 from vars import WORKFLOWS, JOBS
 from executor import execute_workflow_job
+from executor_helper import get_cache_stats, clear_cache
 import os
 
 app = FastAPI()
@@ -91,3 +92,16 @@ def download_job_output(job_id: str):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         filename=f"{filename_without_ext}.xlsx"
     )
+
+
+@app.get("/cache/stats")
+def cache_stats():
+    """View current cache statistics."""
+    return get_cache_stats()
+
+
+@app.delete("/cache")
+def cache_clear():
+    """Clear all cached API results."""
+    clear_cache()
+    return {"message": "Cache cleared successfully"}
