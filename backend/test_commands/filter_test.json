@@ -1,0 +1,101 @@
+[
+    {
+    "name": "Filter Out All But Ariglad Test",
+    "blocks": [
+        {
+        "type": "read_csv",
+        "parameters": {
+            "path": "sample.csv"
+        }
+        },
+        {
+        "type": "filter",
+        "parameters": {
+            "column": "company",
+            "op": "contains",
+            "value": "Ariglad Inc"
+            }
+        },
+        {
+        "type": "export_csv",
+        "parameters": {
+            "output_path": "leads_filtered.csv"
+            }
+        }
+    ]
+    }, 
+    {
+        "name": "Filter Out Ariglad Test",
+        "blocks": [
+            {
+            "type": "read_csv",
+            "parameters": {
+                "path": "sample.csv"
+                }
+            },
+            {
+            "type": "filter",
+            "parameters": {
+                "column": "company",
+                "op": "not_contains", 
+                "value": "Ariglad Inc"
+                }
+            },
+            {
+            "type": "export_csv",
+            "parameters": {
+                "output_path": "leads_filtered_nonull.csv"
+            }
+            }
+        ]
+    }, 
+    {
+        "name": "Filter Non-Null Emails Test",
+        "blocks": [
+            {
+            "type": "read_csv",
+            "parameters": {
+                "path": "sample.csv"
+                }
+            },
+            {
+            "type": "filter",
+            "parameters": {
+                "column": "email",
+                "op": "not_null"
+                }
+            },
+            {
+            "type": "export_csv",
+            "parameters": {
+                "output_path": "leads_filtered_nonull_emails.csv"
+                }
+            }
+        ]
+
+    }, 
+    {
+        "name": "Filter Null Emails Test",
+        "blocks": [
+            {
+            "type": "read_csv",
+            "parameters": {
+                "path": "sample.csv"
+                }
+            },
+            {
+            "type": "filter",
+            "parameters": {
+                "column": "email",
+                "op": "is_null"
+                }
+            },
+            {
+            "type": "export_csv",
+            "parameters": {
+                "output_path": "leads_filtered_null_emails.csv"
+                }
+            }
+        ]
+    }
+]
