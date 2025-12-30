@@ -32,4 +32,5 @@ export interface Job {
   workflow_id: string;
   progress: number;
   error_message?: string | null;
+  output_file?: string | null;
 }

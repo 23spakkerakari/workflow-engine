@@ -69,13 +69,14 @@ function App() {
     const updated = await Promise.all(
     current.map(async (js) => {
         const res = await fetch(`${API_BASE}/jobs/${js.jobId}`);
-        if (res.status === 404) return { ...js, status: "not_found" };
+        if (res.status === 404) return { ...js, status: "not_found" as "not_found" };
         if (!res.ok) return js;
         const data = await res.json();
+        const status: "running" | "failed" = data.error_message ? "failed" : "running";
         return {
           ...js,
           job: data,
-          status: data.error_message ? "failed" : "running",
+          status,
         };
       })
     );
@@ -92,6 +93,18 @@ function App() {
     if (allDone) {
       window.clearInterval(id);
       setPollId(null);
+      
+      updated.forEach((js) => {
+        if (js.job && js.job.progress >= 1 && js.job.output_file && !js.job.error_message) {
+          const downloadUrl = `${API_BASE}/jobs/${js.jobId}/download`;
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = ''; // Browser will use filename from Content-Disposition header
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      });
     }
     }, 500);
 

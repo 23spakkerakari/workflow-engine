@@ -2,6 +2,7 @@
 from uuid import uuid4
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware  
+from fastapi.responses import FileResponse
 from models import (
     WorkFlow,
     Job,
@@ -10,6 +11,7 @@ from models import (
 )
 from vars import WORKFLOWS, JOBS
 from executor import execute_workflow_job
+import os
 
 app = FastAPI()
 
@@ -67,3 +69,25 @@ def get_job(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return job
+
+
+@app.get("/jobs/{job_id}/download")
+def download_job_output(job_id: str):
+    job = JOBS.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    if not job.output_file:
+        raise HTTPException(status_code=404, detail="No output file for this job")
+    
+    if not os.path.exists(job.output_file):
+        raise HTTPException(status_code=404, detail="Output file not found on disk")
+    
+    filename = os.path.basename(job.output_file)
+    filename_without_ext = os.path.splitext(filename)[0]
+    
+    return FileResponse(
+        path=job.output_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=f"{filename_without_ext}.xlsx"
+    )

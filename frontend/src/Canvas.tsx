@@ -104,23 +104,23 @@ function nodePos(node: BlockNode, drag: {id: string; dx: number; dy: number} | n
   return { x: node.x + dx, y: node.y + dy };
 }
 
+const HANDLE_RADIUS = 12; // Half of handle width (24px / 2)
+
 function nodeInputPort(node: BlockNode, drag: any) {
   const p = nodePos(node, drag);
-  // Center of input handle: left edge at -12px, width 24px, so center at -12 + 12 = 0
-  return { x: p.x, y: p.y + BLOCK_H / 2 };
+  return { x: p.x - HANDLE_RADIUS, y: p.y + BLOCK_H / 2 };
 }
 
 function nodeOutputPort(node: BlockNode, drag: any) {
   const p = nodePos(node, drag);
-  // Center of output handle: right edge at block width + 12px (extends beyond)
-  return { x: p.x + BLOCK_W, y: p.y + BLOCK_H / 2 };
+  return { x: p.x + BLOCK_W + HANDLE_RADIUS, y: p.y + BLOCK_H / 2 };
 }
 
 const DraggableBlock: React.FC<{
   node: BlockNode;
   onUpdateParams: (params: Record<string, any>) => void;
   onDelete: (nodeId: string) => void;
-  onRemoveConnection: (nodeId: string) => void;
+  onRemoveConnection: (nodeId: string, direction: 'incoming' | 'outgoing') => void;
   hasIncomingEdge: boolean;
   hasOutgoingEdge: boolean;
   // connect handlers
@@ -163,7 +163,7 @@ const DraggableBlock: React.FC<{
           className="block__remove-connection"
           onClick={(e) => {
             e.stopPropagation();
-            onRemoveConnection(node.id);
+            onRemoveConnection(node.id, 'incoming');
           }}
           title="Remove incoming connection"
         >
@@ -186,7 +186,7 @@ const DraggableBlock: React.FC<{
           className="block__remove-connection"
           onClick={(e) => {
             e.stopPropagation();
-            onRemoveConnection(node.id);
+            onRemoveConnection(node.id, 'outgoing');
           }}
           title="Remove outgoing connection"
         >
@@ -477,9 +477,13 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
     setEdges((prev) => prev.filter((e) => e.from !== nodeId && e.to !== nodeId));
   };
 
-  const removeConnection = (nodeId: string) => {
-    // Remove edges connected to this node (either incoming or outgoing)
-    setEdges((prev) => prev.filter((e) => e.from !== nodeId && e.to !== nodeId));
+  const removeConnection = (nodeId: string, direction: 'incoming' | 'outgoing') => {
+    // Remove only the specified connection direction
+    if (direction === 'incoming') {
+      setEdges((prev) => prev.filter((e) => e.to !== nodeId));
+    } else {
+      setEdges((prev) => prev.filter((e) => e.from !== nodeId));
+    }
   };
 
   const clearConnections = () => setEdges([]);

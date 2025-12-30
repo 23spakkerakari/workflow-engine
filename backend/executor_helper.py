@@ -1,14 +1,17 @@
 import os
 import time
 import requests
+from dotenv import load_dotenv
 
+load_dotenv()
 
 ENRICH_ASYNC_URL = "https://api.sixtyfour.ai/enrich-lead-async"
 JOB_STATUS_URL = "https://api.sixtyfour.ai/job-status/{task_id}"
 FIND_EMAIL_URL = "https://api.sixtyfour.ai/find-email"
 
+SIXTYFOUR_API_KEY = os.getenv("SIXTYFOUR_API_KEY")
 HEADERS = {
-        "x-api-key": os.getenv("SIXTYFOUR_API_KEY"),
+        "x-api-key": SIXTYFOUR_API_KEY,
         "Content-Type": "application/json",
     }
 
@@ -102,9 +105,6 @@ def find_email_one_row(row_dict: dict, mode: str):
     Takes in thread-handled row, (shouldn't take much testing)
     Returns dict of fields to merge into df.
     """
-    print("\n=== FIND_EMAIL DEBUG ===")
-    print("Entered find_email_one_row")
-    print("row_dict:", row_dict)
 
     lead = {
         "name": row_dict.get("name"),
@@ -113,13 +113,10 @@ def find_email_one_row(row_dict: dict, mode: str):
         "phone": row_dict.get("phone"),
         "linkedin": row_dict.get("linkedin"),
     }
-
-    print("lead dict:", lead)
-    print("Checking: not lead.get('name'):", not lead.get("name"))
-    print("Checking: not lead.get('linkedin'):", not lead.get("linkedin"))
     
     if not lead.get("name") and not lead.get("linkedin"):
-        print("❌ EARLY RETURN - both name and linkedin are empty")
+        print("EARLY RETURN;name and linkedin are empty")
+        print("lead dict:", lead)
         return {}
 
     print("✅ Passed validation - about to make API call")
@@ -134,13 +131,15 @@ def find_email_one_row(row_dict: dict, mode: str):
     resp.raise_for_status() 
     data = resp.json()
 
-    print("\n\nDATA:", data)
+    # print("\n\nDATA:", data)
 
+    email = ''
     if mode == 'PERSONAL':
-        row_dict['email'] = data.get("personal_email", data.get)[0][0]
+        email = data.get("personal_email")
     elif mode == 'PROFESSIONAL':
-        row_dict['email'] = data.get("email")[0][0]
+        email = data.get("email")
     
-    row_dict["email"] = data.get("email")[0][0]
+    print("Email:", email[0][0])
+    row_dict["email"] = email[0][0]
     print("\n\nROW DICT:", row_dict)
     return row_dict

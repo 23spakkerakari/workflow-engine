@@ -703,6 +703,55 @@
   color: var(--text-muted);
 }
 
+/* Enhanced select dropdown styling */
+select.input {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #0f172a;
+  font-weight: 500;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  padding-right: 2rem;
+  background-image: 
+    linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f172a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat;
+  background-position: left, right 0.5rem center;
+  background-size: 100%, 12px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+select.input:hover {
+  border-color: #94a3b8;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+}
+
+select.input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 
+    0 0 0 3px rgba(99, 102, 241, 0.3),
+    0 4px 12px rgba(99, 102, 241, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+}
+
+select.input option {
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.5rem;
+  font-weight: 500;
+}
+
 .workflow-panel {
   margin-top: 0.5rem;
   background: rgba(17, 24, 39, 0.5);

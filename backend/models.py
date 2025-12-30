@@ -25,7 +25,8 @@ class Job(BaseModel):
     id: str
     workflow_id: str
     progress: float = 0.0
-    error_message: Optional[str] = None 
+    error_message: Optional[str] = None
+    output_file: Optional[str] = None 
 
 class CreateWorkflowRequest(BaseModel):
     name: str

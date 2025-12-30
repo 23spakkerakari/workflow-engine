@@ -54,6 +54,12 @@ def handle_block(block : Block, df: Optional[pd.DataFrame]):
             raise ValueError("No data to expect")
         print("EXPORTING TO ABS PATH:", output_path)
         df.to_csv(output_path, index=False)
+        
+        # Also save as Excel
+        excel_path = output_path.rsplit('.', 1)[0] + '.xlsx'
+        df.to_excel(excel_path, index=False, engine='openpyxl')
+        print(f"Also exported to Excel: {excel_path}")
+        
         return df
 
     if block_type == BlockType.LEAD_ENRICHMENT:
@@ -84,10 +90,9 @@ def handle_block(block : Block, df: Optional[pd.DataFrame]):
 
         for i, row_result in results_by_index.items():
             for k, v in row_result.items():
-                col = f"found_{k}"
                 if isinstance(v, (dict, list, tuple)):
                     v = json.dumps(v, ensure_ascii=False)
-                df.loc[i, col] = v
+                df.loc[i, k] = v
 
         # df = df[
         #     df.astype(str)
@@ -151,17 +156,27 @@ def execute_workflow_job(job_id: str):
 
     workflow = WORKFLOWS[job.workflow_id]
     num_blocks = max(len(workflow.blocks), 1)
+    output_file_path = None
 
     try:
         for index, block in enumerate(workflow.blocks):
             df = handle_block(block, df if 'df' in locals() else None)
+            
+            # Track output file if this is an EXPORT_CSV block (Excel version)
+            if block.type == BlockType.EXPORT_CSV:
+                csv_path = block.parameters.get("output_path", "output.csv")
+                output_file_path = csv_path.rsplit('.', 1)[0] + '.xlsx'
+            
             job = JOBS[job_id]
             job.progress = (index + 1) / num_blocks
             JOBS[job_id] = job
             print(f"Completed block {index + 1}/{num_blocks} for job {job_id}")
 
-        job = JOBS[job_id]
-        JOBS[job_id] = job
+        # Only set output_file if we actually created one
+        if output_file_path:
+            job = JOBS[job_id]
+            job.output_file = output_file_path
+            JOBS[job_id] = job
 
     except Exception as e:
         job = JOBS[job_id]
