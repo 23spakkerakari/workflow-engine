@@ -23,13 +23,11 @@ function App() {
       return;
     }
 
-    // stop any previous polling
     if (pollId !== null) {
       window.clearInterval(pollId);
       setPollId(null);
     }
 
-    // create + run all workflows in parallel
     const newJobStates: JobState[] = [];
 
     for (const wf of workflows) {
@@ -51,7 +49,7 @@ function App() {
         console.error("Failed to run workflow", wf.name);
         continue;
       }
-      const runJson = await runRes.json(); // { job_id }
+      const runJson = await runRes.json(); 
 
       newJobStates.push({
         workflowName: wf.name,
@@ -99,7 +97,7 @@ function App() {
           const downloadUrl = `${API_BASE}/jobs/${js.jobId}/download`;
           const link = document.createElement('a');
           link.href = downloadUrl;
-          link.download = ''; // Browser will use filename from Content-Disposition header
+          link.download = '';  
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);

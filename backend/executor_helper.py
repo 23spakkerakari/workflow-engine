@@ -16,12 +16,10 @@ HEADERS = {
         "Content-Type": "application/json",
     }
 
-# ========== RESULT CACHE ==========
-# Caches API results to avoid duplicate calls for overlapping data
-# Key: tuple of identifying fields, Value: API result dict
+
 _enrich_cache: dict[tuple, dict] = {}
 _email_cache: dict[tuple, dict] = {}
-_cache_lock = Lock()  # Thread-safe cache access
+_cache_lock = Lock() 
 
 def _make_enrich_cache_key(row_dict: dict) -> tuple:
     """Create a unique cache key from lead identifying info."""
@@ -145,7 +143,7 @@ def enrich_one_row(row_dict: dict):
     # Store in cache for future use
     with _cache_lock:
         _enrich_cache[cache_key] = result.copy()
-        print(f"💾 CACHED enrich result for: {cache_key[:2]} (cache size: {len(_enrich_cache)})")
+        # print(f"💾 CACHED enrich result for: {cache_key[:2]} (cache size: {len(_enrich_cache)})")
 
     print("\n\nENRICH RESULT:", result)
     print("******TOTAL TIME FOR ROW", time.time() - start, "seconds\n\n")
@@ -159,12 +157,11 @@ def find_email_one_row(row_dict: dict, mode: str):
     Returns dict of fields to merge into df.
     Uses cache to avoid duplicate API calls for same lead.
     """
-    # Check cache first
     cache_key = _make_email_cache_key(row_dict, mode)
     with _cache_lock:
         if cache_key in _email_cache:
             cached = _email_cache[cache_key]
-            print(f"💾 CACHE HIT for email: {cache_key[:2]}")
+            # print(f"💾 CACHE HIT for email: {cache_key[:2]}")
             # Merge cached email into row_dict
             row_dict["email"] = cached.get("email", "")
             return row_dict
@@ -206,10 +203,10 @@ def find_email_one_row(row_dict: dict, mode: str):
     print("Email:", email_value)
     row_dict["email"] = email_value
     
-    # Store in cache for future use
+    # I'll use this cache for cross checking
     with _cache_lock:
         _email_cache[cache_key] = {"email": email_value}
-        print(f"💾 CACHED email result for: {cache_key[:2]} (cache size: {len(_email_cache)})")
+        # print(f"💾 CACHED email result for: {cache_key[:2]} (cache size: {len(_email_cache)})")
     
     print("\n\nROW DICT:", row_dict)
     return row_dict

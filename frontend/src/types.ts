@@ -1,6 +1,7 @@
 export type BlockType =
   | "read_csv"
   | "lead_enrichment"
+  | "manual_enrich"
   | "filter"
   | "find_email"
   | "export_csv";

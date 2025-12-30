@@ -7,6 +7,7 @@ import uuid
 class BlockType(str, Enum):
     READ_CSV = "read_csv"
     LEAD_ENRICHMENT = "lead_enrichment"
+    MANUAL_ENRICH = "manual_enrich"
     FILTER = "filter"
     FIND_EMAIL = "find_email"
     EXPORT_CSV = "export_csv"

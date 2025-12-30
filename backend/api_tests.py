@@ -36,9 +36,9 @@ task_info = response.json()
 print(task_info)
 task_id = task_info['task_id']
 
-# Poll for results
+# result polling (not job status polling)
 while True:
-    print("in loop... making get request on job ")
+    # print("in loop. making get request on job ")
     status_response = requests.get(
         f'https://api.sixtyfour.ai/job-status/{task_id}',
         headers={'x-api-key': API_KEY}

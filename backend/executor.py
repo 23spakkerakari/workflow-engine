@@ -19,6 +19,37 @@ def handle_block(block : Block, df: Optional[pd.DataFrame]):
         df = pd.read_csv(fp)
         return df
 
+    if block_type == BlockType.MANUAL_ENRICH:
+        name = block_params.get("name", "")
+        company = block_params.get("company", "")
+        company_location = block_params.get("company_location", "")
+        linkedin = block_params.get("linkedin", "")
+        
+        if not name and not linkedin:
+            raise ValueError("MANUAL_ENRICH requires at least 'name' or 'linkedin' parameter")
+        
+        row_dict = {
+            "name": name,
+            "company": company,
+            "company_location": company_location,
+            "linkedin": linkedin,
+        }
+        
+        
+        result = enrich_one_row(row_dict)
+        
+        output_row = {**row_dict}
+        for k, v in result.items():
+            col = f"found_{k}"
+            if isinstance(v, (dict, list)):
+                output_row[col] = json.dumps(v, ensure_ascii=False)
+            else:
+                output_row[col] = v
+        
+        df = pd.DataFrame([output_row])
+        print(f"✅ Manual enrich complete. Columns: {df.columns.tolist()}")
+        return df
+
     if block_type == BlockType.FILTER:
         if df is None:
             raise ValueError("FILTER block requires input DataFrame")
@@ -55,7 +86,6 @@ def handle_block(block : Block, df: Optional[pd.DataFrame]):
         print("EXPORTING TO ABS PATH:", output_path)
         df.to_csv(output_path, index=False)
         
-        # Also save as Excel
         excel_path = output_path.rsplit('.', 1)[0] + '.xlsx'
         df.to_excel(excel_path, index=False, engine='openpyxl')
         print(f"Also exported to Excel: {excel_path}")
@@ -162,7 +192,6 @@ def execute_workflow_job(job_id: str):
         for index, block in enumerate(workflow.blocks):
             df = handle_block(block, df if 'df' in locals() else None)
             
-            # Track output file if this is an EXPORT_CSV block (Excel version)
             if block.type == BlockType.EXPORT_CSV:
                 csv_path = block.parameters.get("output_path", "output.csv")
                 output_file_path = csv_path.rsplit('.', 1)[0] + '.xlsx'
@@ -172,7 +201,6 @@ def execute_workflow_job(job_id: str):
             JOBS[job_id] = job
             print(f"Completed block {index + 1}/{num_blocks} for job {job_id}")
 
-        # Only set output_file if we actually created one
         if output_file_path:
             job = JOBS[job_id]
             job.output_file = output_file_path

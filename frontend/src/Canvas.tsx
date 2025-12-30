@@ -1,4 +1,3 @@
-// src/Canvas.tsx
 import React, { useMemo, useRef, useState } from "react";
 import {
   DndContext,
@@ -17,6 +16,7 @@ const BLOCK_H = 120;
 const labelByType: Record<BlockType, string> = {
   read_csv: "Read CSV",
   lead_enrichment: "Lead Enrichment",
+  manual_enrich: "Manual Enrich",
   filter: "Filter",
   find_email: "Find Email",
   export_csv: "Export CSV",
@@ -35,6 +35,14 @@ const iconByType: Record<BlockType, React.ReactNode> = {
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3"/>
       <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m0 6l4.2 4.2M1 12h6m6 0h6m-13.2 5.2l4.2-4.2m6 0l4.2 4.2"/>
+    </svg>
+  ),
+  manual_enrich: (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+      <line x1="12" y1="11" x2="12" y2="17"/>
+      <line x1="9" y1="14" x2="15" y2="14"/>
     </svg>
   ),
   filter: (
@@ -70,7 +78,6 @@ const makeNode = (type: BlockType, x: number, y: number): BlockNode => ({
   y,
 });
 
-// Block template button for the toolbar palette
 const BlockTemplate: React.FC<{ type: BlockType; onClick: () => void }> = ({ type, onClick }) => {
   return (
     <button
@@ -90,10 +97,8 @@ type ConnectingState =
   | null
   | {
       fromNodeId: string;
-      // start point in canvas coordinates
       startX: number;
       startY: number;
-      // current pointer in canvas coordinates
       x: number;
       y: number;
     };
@@ -104,7 +109,7 @@ function nodePos(node: BlockNode, drag: {id: string; dx: number; dy: number} | n
   return { x: node.x + dx, y: node.y + dy };
 }
 
-const HANDLE_RADIUS = 12; // Half of handle width (24px / 2)
+const HANDLE_RADIUS = 12; 
 
 function nodeInputPort(node: BlockNode, drag: any) {
   const p = nodePos(node, drag);
@@ -123,9 +128,7 @@ const DraggableBlock: React.FC<{
   onRemoveConnection: (nodeId: string, direction: 'incoming' | 'outgoing') => void;
   hasIncomingEdge: boolean;
   hasOutgoingEdge: boolean;
-  // connect handlers
   onStartConnect: (fromNodeId: string, e: React.PointerEvent) => void;
-  // for dropping: each input port has a ref-able DOM rect checker
   registerInputEl: (nodeId: string, el: HTMLDivElement | null) => void;
 }> = ({ node, onUpdateParams, onDelete, onRemoveConnection, hasIncomingEdge, hasOutgoingEdge, onStartConnect, registerInputEl }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -210,7 +213,7 @@ const DraggableBlock: React.FC<{
     {/* PARAMS AREA (NOT DRAGGABLE) */}
     <div
       className="block__params"
-      onPointerDown={(e) => e.stopPropagation()} // prevents drag start when clicking inside inputs
+      onPointerDown={(e) => e.stopPropagation()}  
     >
       <BlockParamsForm
         type={node.type}
@@ -276,7 +279,6 @@ function BlockParamsForm({
             className="input"
             value={params.column ?? ""}
             onChange={(e) => {
-              // Ensure op is set when column is entered
               const newParams = setParam(params, "column", e.target.value);
               if (!newParams.op) {
                 newParams.op = "contains";
@@ -322,6 +324,49 @@ function BlockParamsForm({
     );
   }
 
+  if (type === "manual_enrich") {
+    return (
+      <div className="field-grid">
+        <label className="field">
+          Name
+          <input
+            className="input"
+            value={params.name ?? ""}
+            onChange={(e) => onChange(setParam(params, "name", e.target.value))}
+            placeholder="e.g. John Doe"
+          />
+        </label>
+        <label className="field">
+          Company
+          <input
+            className="input"
+            value={params.company ?? ""}
+            onChange={(e) => onChange(setParam(params, "company", e.target.value))}
+            placeholder="e.g. Acme Inc"
+          />
+        </label>
+        <label className="field">
+          Company Location
+          <input
+            className="input"
+            value={params.company_location ?? ""}
+            onChange={(e) => onChange(setParam(params, "company_location", e.target.value))}
+            placeholder="e.g. San Francisco, CA"
+          />
+        </label>
+        <label className="field">
+          LinkedIn URL
+          <input
+            className="input"
+            value={params.linkedin ?? ""}
+            onChange={(e) => onChange(setParam(params, "linkedin", e.target.value))}
+            placeholder="e.g. linkedin.com/in/johndoe"
+          />
+        </label>
+      </div>
+    );
+  }
+
   if (type === "find_email") {
     return (
       <label className="field">
@@ -338,7 +383,6 @@ function BlockParamsForm({
     );
   }
 
-  // keep your read_csv/export_csv forms as you already have
   return <div className="muted small">No params</div>;
 }
 
@@ -358,15 +402,13 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 1, // Start drag after moving just 1px (was ~8px by default)
+        distance: 1, 
       },
     })
   );
 
-  // canvas ref to convert pointer -> canvas coords
-  const canvasRef = useRef<HTMLDivElement | null>(null);
 
-  // store input-handle DOM nodes so we can detect drop target
+  const canvasRef = useRef<HTMLDivElement | null>(null);
   const inputEls = useRef<Map<string, HTMLDivElement>>(new Map());
 
 
@@ -374,7 +416,6 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
     const { active, delta } = event;
     const id = String(active.id);
 
-    // Normal block dragging (existing blocks on canvas)
     setNodes((prev) =>
       prev.map((n) =>
         n.id === id ? { ...n, x: n.x + delta.x, y: n.y + delta.y } : n
@@ -391,7 +432,6 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
 
   const canAddEdge = (fromId: string, toId: string) => {
     if (fromId === toId) return false;
-    // enforce simple chain
     const hasOutgoing = edges.some((e) => e.from === fromId);
     const hasIncoming = edges.some((e) => e.to === toId);
     return !hasOutgoing && !hasIncoming;
@@ -409,10 +449,7 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
     const fromNode = nodes.find((n) => n.id === fromNodeId);
     if (!fromNode) return;
 
-    // start from output port
     const start = nodeOutputPort(fromNode, drag);
-
-    // capture pointer so we keep receiving move/up events
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 
     const p = canvasPoint(e.clientX, e.clientY);
@@ -437,11 +474,9 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
 
     const p = canvasPoint(e.clientX, e.clientY);
 
-    // find which input handle contains this point
     let targetNodeId: string | null = null;
     for (const [nodeId, el] of inputEls.current.entries()) {
       const rect = el.getBoundingClientRect();
-      // convert rect to canvas space
       const canvasRect = canvasRef.current?.getBoundingClientRect();
       if (!canvasRect) continue;
 
@@ -464,7 +499,6 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
   };
 
   const addBlock = (type: BlockType) => {
-    // Position new blocks in a staggered pattern
     const offset = nodes.length * 30;
     setNodes((prev) => [
       ...prev,
@@ -478,7 +512,6 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
   };
 
   const removeConnection = (nodeId: string, direction: 'incoming' | 'outgoing') => {
-    // Remove only the specified connection direction
     if (direction === 'incoming') {
       setEdges((prev) => prev.filter((e) => e.to !== nodeId));
     } else {
@@ -487,8 +520,6 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
   };
 
   const clearConnections = () => setEdges([]);
-
-  // edges drawn as SVG lines
   const edgeLines = useMemo(() => {
     return edges.map((e) => {
       const from = nodes.find((n) => n.id === e.from);
@@ -515,7 +546,6 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
     });
   }, [edges, nodes, drag]);
 
-  // live preview line while dragging connector
   const previewLine = connecting ? (
     <line
       x1={connecting.startX}
@@ -531,8 +561,7 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
     />
   ) : null;
 
-  // graph -> linear workflows (connected chains)
-  const workflows: WorkflowDefinition[] = useMemo(() => {
+    const workflows: WorkflowDefinition[] = useMemo(() => {
     const outMap = new Map<string, string>();
     const inCount = new Map<string, number>();
     const nodeMap = new Map(nodes.map((n) => [n.id, n]));
@@ -571,7 +600,7 @@ export default function Canvas({ onBuildWorkflows }: CanvasProps) {
     return result;
   }, [nodes, edges]);
 
-  const blockTypes: BlockType[] = ['read_csv', 'lead_enrichment', 'filter', 'find_email', 'export_csv'];
+  const blockTypes: BlockType[] = ['read_csv', 'manual_enrich', 'lead_enrichment', 'filter', 'find_email', 'export_csv'];
 
   return (
     <div className="canvas-panel">

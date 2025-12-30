@@ -294,6 +294,18 @@
   color: #8b5cf6;
 }
 
+.block-template--manual_enrich .block-template__icon {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: rgba(236, 72, 153, 0.3);
+  color: #f9a8d4;
+}
+
+.block-template--manual_enrich:hover .block-template__icon {
+  background: rgba(236, 72, 153, 0.25);
+  border-color: #ec4899;
+  color: #ec4899;
+}
+
 .block-template--filter .block-template__icon {
   background: rgba(251, 191, 36, 0.15);
   border-color: rgba(251, 191, 36, 0.3);
@@ -602,6 +614,18 @@
   background: rgba(139, 92, 246, 0.25);
   border-color: #8b5cf6;
   color: #8b5cf6;
+}
+
+.block--manual_enrich .block__icon {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: rgba(236, 72, 153, 0.3);
+  color: #f9a8d4;
+}
+
+.block--manual_enrich:hover .block__icon {
+  background: rgba(236, 72, 153, 0.25);
+  border-color: #ec4899;
+  color: #ec4899;
 }
 
 .block--filter .block__icon {
